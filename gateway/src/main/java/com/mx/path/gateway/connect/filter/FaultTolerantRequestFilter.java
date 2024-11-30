@@ -7,6 +7,8 @@ import com.mx.path.core.common.connect.Response;
 import com.mx.path.core.common.http.HttpStatus;
 import com.mx.path.core.common.process.FaultTolerantExecutor;
 import com.mx.path.core.context.RequestContext;
+import com.mx.path.core.context.ResponseContext;
+import com.mx.path.core.context.Session;
 import com.mx.path.core.context.facility.Facilities;
 import com.mx.path.gateway.context.GatewayRequestContext;
 
@@ -28,8 +30,26 @@ public class FaultTolerantRequestFilter extends RequestFilterBase {
     FaultTolerantExecutor faultTolerantExecutor = Facilities.getFaultTolerantExecutor(RequestContext.current().getClientId());
     if (faultTolerantExecutor != null) {
       try {
+        RequestContext currentRequestContext = RequestContext.current();
+        ResponseContext currentResponseContext = ResponseContext.current();
+        Session currentSession = Session.current();
+
         String scope = request.getFaultTolerantScope() != null ? request.getFaultTolerantScope() : buildScope();
         faultTolerantExecutor.submit(scope, scopeConfigurations -> {
+
+          // Forward context objects to current thread.
+          if (currentRequestContext != null) {
+            currentRequestContext.register();
+          }
+
+          if (currentResponseContext != null) {
+            currentResponseContext.register();
+          }
+
+          if (currentSession != null) {
+            Session.setCurrent(currentSession);
+          }
+
           // If a request timeout was explicitly provided (should be rare) we respect it. Otherwise, we use the timeout
           // that the FaultTolerantExecutor is using for this request.
           if (request.getRequestTimeOut() == null) {
