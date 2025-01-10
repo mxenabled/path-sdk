@@ -6,6 +6,7 @@ import com.mx.path.gateway.behavior.GatewayBehavior
 import com.mx.path.gateway.service.GatewayService
 import com.mx.testing.MessageBrokerImpl
 import com.mx.testing.binding.BehaviorWithConfiguration
+import com.mx.testing.binding.BehaviorWithConfigurationAndConnection
 import com.mx.testing.binding.BindedConfigGatewayService
 
 import spock.lang.Specification
@@ -61,6 +62,45 @@ class GatewayObjectConfiguratorTest extends Specification {
     verifyAll((BehaviorWithConfiguration) result) {
       behaviorConfiguration.active
       initialized
+    }
+  }
+
+  def "builds and binds a GatewayBehavior with Connection"() {
+    given:
+    def node = new ObjectMap().tap {
+      put("class", BehaviorWithConfigurationAndConnection.getCanonicalName())
+      put("configurations", new ObjectMap().tap {
+        put("active", true)
+        put("actionFilter", "put")
+      })
+      createMap("connections").tap {
+        createMap("connection").tap {
+          createMap("configurations").tap {
+            put("clientId", "clientId")
+          }
+          put("baseUrl", "url")
+          put("certificateAlias", "alias")
+          put("keystorePath", "path")
+          put("keystorePassword", "password")
+        }
+      }
+    }
+
+    when:
+    def result = subject.buildFromNode(node, "client1", GatewayBehavior)
+
+    then:
+    result instanceof BehaviorWithConfigurationAndConnection
+    verifyAll((BehaviorWithConfigurationAndConnection) result) {
+      connectionWithBoundConfiguration
+      behaviorConfiguration.active
+      initialized
+      verifyAll (connectionWithBoundConfiguration) {
+        baseUrl == "url"
+        certificateAlias == "alias"
+        keystorePath == "path"
+        keystorePassword.toString() == "password"
+      }
     }
   }
 
