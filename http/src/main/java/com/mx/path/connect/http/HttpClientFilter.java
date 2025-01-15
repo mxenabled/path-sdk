@@ -44,7 +44,6 @@ import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.RequestBuilder;
 import org.apache.http.client.utils.URIBuilder;
-import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.conn.HttpHostConnectException;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.entity.ByteArrayEntity;
@@ -68,7 +67,6 @@ public class HttpClientFilter extends RequestFilterBase {
    * instead of converting it to a String.
    */
   private static final List<String> RAW_BODY_CONTENT_TYPE_HINTS = Arrays.asList("image", "pdf", "msword");
-  private static final int HTTP_STATUS_EXTERNAL_TIMEOUT = 531;
 
   private static GsonBuilder gsonBuilder = new GsonBuilder();
   private static final Gson GSON = gsonBuilder
@@ -161,15 +159,12 @@ public class HttpClientFilter extends RequestFilterBase {
           } finally {
             response.finish();
           }
-        } catch (ConnectTimeoutException e) {
-          httpResponse.setStatus(HttpStatus.valueOf(HTTP_STATUS_EXTERNAL_TIMEOUT));
-          throw new ConnectException("Connection timeout: " + e.getMessage(), e);
+        } catch (ConnectException e) {
+          throw new HttpClientConnectException("Connection Exception", e);
         } catch (SocketTimeoutException e) {
-          httpResponse.setStatus(HttpStatus.valueOf(HTTP_STATUS_EXTERNAL_TIMEOUT));
-          throw new ConnectException("Read timeout: " + e.getMessage(), e);
+          throw new HttpClientConnectException("Read Timeout Exception", e);
         } catch (NoHttpResponseException e) {
-          httpResponse.setStatus(HttpStatus.valueOf(HTTP_STATUS_EXTERNAL_TIMEOUT));
-          throw new ConnectException("Target server failed to respond: " + e.getMessage(), e);
+          throw new HttpClientConnectException("Target server failed to response", e);
         } catch (SSLHandshakeException e) {
           throw new HttpClientConnectException("SSL handshake failed", e);
         } catch (SSLException e) {

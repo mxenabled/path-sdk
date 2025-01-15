@@ -8,6 +8,7 @@ import com.mx.path.connect.http.HttpClientFilter
 import com.mx.path.connect.http.HttpRequest
 import com.mx.path.connect.http.HttpResponse
 import com.mx.path.core.common.collection.MultiValueMap
+import com.mx.path.core.common.connect.ConnectException
 import com.mx.path.core.common.connect.Request
 import com.mx.path.core.common.connect.RequestFilter
 
@@ -111,4 +112,22 @@ class HttpClientFilterTest extends Specification {
     false                   || makeContentTypeHeaders("application/xml")
     false                   || makeContentTypeHeaders()
   }
+
+  def "test connect exception handling in execute method"() {
+    given: "A mock HttpRequest and Response"
+    def mockRequest = Mock(HttpRequest)
+    def mockResponse = Mock(HttpResponse)
+
+    // Create the real executor object (HttpClientFilter)
+    HttpClientFilter executor = Mock(HttpClientFilter)
+
+    executor.execute(mockRequest, mockResponse) >> { throw new ConnectException("Connection Exception") }
+
+    when: "Execute method is called"
+    executor.execute(mockRequest, mockResponse)
+
+    then: "ConnectException is thrown"
+    thrown(ConnectException)
+  }
+
 }
