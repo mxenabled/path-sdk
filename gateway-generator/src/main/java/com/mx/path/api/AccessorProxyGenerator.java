@@ -18,8 +18,12 @@ import com.mx.path.core.common.accessor.RootAccessor;
 import com.mx.path.core.common.gateway.GatewayAPI;
 import com.mx.path.core.common.lang.Strings;
 import com.mx.path.core.common.reflection.Annotations;
+import com.mx.path.core.utility.reflection.ClassHelper;
 import com.mx.path.gateway.accessor.Accessor;
 import com.mx.path.gateway.accessor.AccessorConfiguration;
+import com.mx.path.gateway.configuration.AccessorConstructionContext;
+import com.mx.path.gateway.configuration.AccessorProxy;
+import com.mx.path.gateway.configuration.AccessorProxyMap;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.FieldSpec;
@@ -61,7 +65,7 @@ public class AccessorProxyGenerator {
     }
     accessorProxyMappings = CodeBlock.builder();
     recursiveGenerate(rootAccessor);
-    accessorProxyMappings.addStatement("$T.freeze()", ClassName.get("com.mx.path.gateway.configuration", "AccessorProxyMap"));
+    accessorProxyMappings.addStatement("$T.freeze()", ClassHelper.buildClassName(AccessorProxyMap.class));
 
     return accessorProxyMappings.build();
   }
@@ -75,7 +79,7 @@ public class AccessorProxyGenerator {
     TypeSpec.Builder classBuilder = TypeSpec.classBuilder(proxyName)
         .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
         .superclass(klass)
-        .addSuperinterface(ClassName.get("com.mx.path.gateway.configuration", "AccessorProxy"))
+        .addSuperinterface(ClassHelper.buildClassName(AccessorProxy.class))
 
         .addJavadoc(
             "Base class for wrapping " + klass.getName() + ".\n"
@@ -88,11 +92,11 @@ public class AccessorProxyGenerator {
                 .addParameter(AccessorConfiguration.class, "configuration")
                 .addParameter(ParameterizedTypeName.get(ClassName.get(Class.class), WildcardTypeName.subtypeOf(klass)), "accessorClass")
                 .addStatement("this.setConfiguration(configuration)")
-                .addStatement("this.accessorConstructionContext = new $T(accessorClass, configuration)", ParameterizedTypeName.get(ClassName.get("com.mx.path.gateway.configuration", "AccessorConstructionContext"), TypeName.get(klass)))
+                .addStatement("this.accessorConstructionContext = new $T(accessorClass, configuration)", ParameterizedTypeName.get(ClassHelper.buildClassName(AccessorConstructionContext.class), TypeName.get(klass)))
                 .build())
 
         .addField(
-            FieldSpec.builder(ParameterizedTypeName.get(ClassName.get("com.mx.path.gateway.configuration", "AccessorConstructionContext"), WildcardTypeName.subtypeOf(klass)), "accessorConstructionContext")
+            FieldSpec.builder(ParameterizedTypeName.get(ClassHelper.buildClassName(AccessorConstructionContext.class), WildcardTypeName.subtypeOf(klass)), "accessorConstructionContext")
                 .addModifiers(Modifier.PRIVATE, Modifier.FINAL)
                 .addAnnotation(ClassName.get("lombok", "Getter"))
                 .build())
@@ -233,7 +237,7 @@ public class AccessorProxyGenerator {
         .build();
     javaFile.writeTo(filer);
 
-    accessorProxyMappings.addStatement("$T.add(\"singleton\", $T.class, $T.class)", ClassName.get("com.mx.path.gateway.configuration", "AccessorProxyMap"), accessorClass, ClassName.get(packageName, proxyBaseClass + "Singleton"));
+    accessorProxyMappings.addStatement("$T.add(\"singleton\", $T.class, $T.class)", ClassHelper.buildClassName(AccessorProxyMap.class), accessorClass, ClassName.get(packageName, proxyBaseClass + "Singleton"));
   }
 
   private void generatePrototypeProxy(String proxyBaseClass, Class<? extends Accessor> accessorClass) throws IOException {
@@ -270,7 +274,7 @@ public class AccessorProxyGenerator {
         .build();
     javaFile.writeTo(filer);
 
-    accessorProxyMappings.addStatement("$T.add(\"prototype\", $T.class, $T.class)", ClassName.get("com.mx.path.gateway.configuration", "AccessorProxyMap"), accessorClass, ClassName.get(packageName, proxyBaseClass + "Prototype"));
+    accessorProxyMappings.addStatement("$T.add(\"prototype\", $T.class, $T.class)", ClassHelper.buildClassName(AccessorProxyMap.class), accessorClass, ClassName.get(packageName, proxyBaseClass + "Prototype"));
   }
 
   private String calculatePackageName(Class<? extends Accessor> accessorClass) {

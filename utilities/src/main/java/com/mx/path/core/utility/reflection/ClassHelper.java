@@ -18,6 +18,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.squareup.javapoet.ClassName;
+
 /**
  * Utility class with methods based on java standard types and functions.
  */
@@ -324,5 +326,15 @@ public class ClassHelper {
     }
     Type[] actualTypeArguments = ((ParameterizedType) parameterizedType).getActualTypeArguments();
     return Arrays.asList(actualTypeArguments);
+  }
+
+  /**
+   * Build and return new {@link ClassName} from class.
+   *
+   * @param clazz class to build from
+   * @return new {@link ClassName} instance
+   */
+  public static ClassName buildClassName(Class<?> clazz) {
+    return ClassName.get(clazz.getPackage().getName(), clazz.getSimpleName());
   }
 }
